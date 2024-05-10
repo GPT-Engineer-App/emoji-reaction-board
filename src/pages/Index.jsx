@@ -78,7 +78,7 @@ const Index = () => {
       setPosts(
         posts.map((post) => {
           if (post.id === postId) {
-            const newReactions = { ...post.reactions };
+            const newReactions = { ...(post.reactions || {}) };
             newReactions[emoji] = (newReactions[emoji] || 0) + 1;
             return { ...post, reactions: newReactions };
           }
