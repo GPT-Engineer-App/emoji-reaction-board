@@ -119,7 +119,7 @@ const Index = () => {
             <Text mt={2}>{post.body}</Text>
             <Stack direction="row" mt={2}>
               <IconButton aria-label="React with smile" icon={<FaSmile />} onClick={() => handleReaction(post.id, "👍")} />
-              <Text>{post.reactions["👍"] || 0}</Text>
+              <Text>{post.reactions?.["👍"] || 0}</Text>
             </Stack>
           </Box>
         ))}
