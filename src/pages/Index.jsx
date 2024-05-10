@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { api } from "../lib/api";
 import { Container, VStack, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, FormControl, FormLabel, Input, useDisclosure, Text, Box, IconButton, Flex, Heading, Textarea, Stack, useToast } from "@chakra-ui/react";
 import { FaRocket, FaTrash, FaSmile } from "react-icons/fa";
 
@@ -10,11 +11,15 @@ const Index = () => {
   const toast = useToast();
 
   useEffect(() => {
-    // This would be replaced with an API call to fetch posts
-    setPosts([
-      { id: 1, title: "First Post", body: "This is the first post", date: new Date(), author: "User1", reactions: { "👍": 1 } },
-      { id: 2, title: "Second Post", body: "This is the second post", date: new Date(), author: "User2", reactions: {} },
-    ]);
+    const fetchPosts = async () => {
+      try {
+        const fetchedPosts = await api.posts.list({});
+        setPosts(fetchedPosts);
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+      }
+    };
+    fetchPosts();
   }, []);
 
   const handleLogin = (username) => {
@@ -39,36 +44,50 @@ const Index = () => {
     });
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!user) {
       onOpen();
       return;
     }
-    const newId = posts.length + 1;
-    const date = new Date();
-    setPosts([...posts, { ...newPost, id: newId, date, author: user, reactions: {} }]);
-    setNewPost({ title: "", body: "" });
+    try {
+      const createdPost = await api.posts.create({ post: newPost, select: "id,title,body,author_id", preferPost: "return=representation" });
+      setPosts([...posts, createdPost]);
+      setNewPost({ title: "", body: "" });
+    } catch (error) {
+      console.error("Failed to create post:", error);
+    }
   };
 
-  const handleDeletePost = (postId) => {
-    setPosts(posts.filter((post) => post.id !== postId));
+  const handleDeletePost = async (postId) => {
+    try {
+      await api.posts.delete({ id: postId });
+      setPosts(posts.filter((post) => post.id !== postId));
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+    }
   };
 
-  const handleReaction = (postId, emoji) => {
+  const handleReaction = async (postId, emoji) => {
     if (!user) {
       onOpen();
       return;
     }
-    setPosts(
-      posts.map((post) => {
-        if (post.id === postId) {
-          const newReactions = { ...post.reactions };
-          newReactions[emoji] = (newReactions[emoji] || 0) + 1;
-          return { ...post, reactions: newReactions };
-        }
-        return post;
-      }),
-    );
+    try {
+      const reaction = { postId, emoji };
+      await api.reactions.create({ reaction });
+      setPosts(
+        posts.map((post) => {
+          if (post.id === postId) {
+            const newReactions = { ...post.reactions };
+            newReactions[emoji] = (newReactions[emoji] || 0) + 1;
+            return { ...post, reactions: newReactions };
+          }
+          return post;
+        }),
+      );
+    } catch (error) {
+      console.error("Failed to add reaction:", error);
+    }
   };
 
   return (
